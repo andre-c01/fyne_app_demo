@@ -32,8 +32,6 @@ systemctl enable mariadb --now
 
 systemctl restart mariadb
 
-mariadb -u root -p
-
 mariadb  -s -u root -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('System32');"
 mariadb  -s -u root -e "DELETE FROM mysql.user WHERE User='';"
 mariadb  -s -u root -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
@@ -47,8 +45,8 @@ mariadb  -s -u root -e "CREATE DATABASE school;"
 
 mariadb  -s -u root -D "school" -e "CREATE TABLE students(
 	id INT auto_increment PRIMARY KEY,
-	name VARCHAR(255) not null UNIQUE,
-	passwd VARCHAR(255) not null);"
+	name VARCHAR(255) not null UNIQUE
+);"
 
 mariadb  -s -u root -e "GRANT CREATE, ALTER, DROP, INSERT, UPDATE, DELETE, SELECT, REFERENCES on school.* TO 'teacher'@'192.168.56.1' WITH GRANT OPTION;"
 
