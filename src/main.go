@@ -3,7 +3,7 @@
 package main
 
 import (
-	//"time"
+	"time"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -11,46 +11,121 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/data/binding"
 	"database/sql"
-    "fmt"
+    _ "fmt"
     _ "github.com/go-sql-driver/mysql"
 	"strconv"
 )
 
-func Delete(app fyne.App, student Student) {
+func Delete(student Student) {
+	db, err := sql.Open("mysql", "teacher:System32@tcp(10.0.3.89:3306)/school")
+    if err != nil {
+        panic(err.Error())
+    }
+    defer db.Close()
+
+    stmtOut, err := db.Prepare("delete from students where id=?")
+    if err != nil {
+        panic(err.Error())
+    }
+    defer stmtOut.Close()
+
+	_, err = stmtOut.Exec(student.Id)
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
 
 }
 
-func Edit(app fyne.App, student Student) {
+func Add(name string) {
+	db, err := sql.Open("mysql", "teacher:System32@tcp(10.0.3.89:3306)/school")
+    if err != nil {
+        panic(err.Error())
+    }
+    defer db.Close()
+
+    stmtOut, err := db.Prepare("INSERT INTO students VALUES(default,?)")
+    if err != nil {
+        panic(err.Error())
+    }
+    defer stmtOut.Close()
+
+    _, err = stmtOut.Exec(name)
+    if err != nil {
+        panic(err.Error()) // proper error handling instead of panic in your app
+    }
+
+}
+
+func Edit(id int, name string) {
 	
-	fmt.Println(strconv.Itoa(student.Id))
+	db, err := sql.Open("mysql", "teacher:System32@tcp(10.0.3.89:3306)/school")
+    if err != nil {
+        panic(err.Error())
+    }
+    defer db.Close()
+
+    stmtOut, err := db.Prepare("update students set name = ? where id = ?")
+    if err != nil {
+        panic(err.Error())
+    }
+    defer stmtOut.Close()
+
+    _, err = stmtOut.Exec(name,id)
+    if err != nil {
+        panic(err.Error()) // proper error handling instead of panic in your app
+    }
+
+}
+
+func EditWindow(student Student) {
 	
-	add_input_field := widget.NewEntry()
-	add_input_field.PlaceHolder = student.Name
+	//fmt.Println(strconv.Itoa(student.Id))
+	
+	edit_input_field := widget.NewEntry()
+	edit_input_field.Text = student.Name
+
+	window := this_app.NewWindow("Edit")
+    window.Resize(fyne.NewSize(300,30))
 
 	container := container.NewBorder(
 		nil,nil,
 		widget.NewLabel("ID: " + strconv.Itoa(student.Id)),
-		widget.NewButton("Confirm", func() {}),
-		add_input_field, 
+		widget.NewButton("Confirm", func() {
+			Edit(student.Id, edit_input_field.Text)
+			window.Close()
+		}),
+		edit_input_field, 
 	)
 
-	window := app.NewWindow("Edit")
-    window.Resize(fyne.NewSize(300,30))
-
-    window.SetContent(container)
+	window.SetContent(container)
 
     window.Show()
 }
 
-func MainWindow(app fyne.App) fyne.Window {
+func MainContainer() *fyne.Container {
+
+	user_add_field := widget.NewEntry()
+	user_add_field.PlaceHolder = "Aluno"
+	user_add_btn := widget.NewButton("Add", func() {
+		Add(user_add_field.Text)
+		user_add_field.Text = ""
+	})
+	user_add_btn.Disable()	
+	user_add_field.OnChanged = func(s string) {
+		user_add_btn.Disable()
+
+		if len(s) >= 3 {
+			user_add_btn.Enable()
+		}
+	}
 
 	user_input_container := container.New(
 		layout.NewVBoxLayout(),
 		//widget.NewLabel("hello"),
 		container.NewBorder(
 			nil, nil, nil,
-			widget.NewButton("Add", func() {}),
-			widget.NewEntry(),
+			user_add_btn,
+			user_add_field,
 		),
 		widget.NewLabel(""),
 	)
@@ -59,7 +134,7 @@ func MainWindow(app fyne.App) fyne.Window {
 
 	students_bind_list := binding.NewUntypedList()
     for _,name := range students {
-      fmt.Println(name)
+      //fmt.Println(name)
       students_bind_list.Append(name)
     }
 
@@ -87,34 +162,30 @@ func MainWindow(app fyne.App) fyne.Window {
 				// but we know that they are those types for sure
 				l := ctr.Objects[0].(*widget.Label)
 				c1 := ctr.Objects[1].(*fyne.Container).Objects[0].(*widget.Button)
-				//c2 := ctr.Objects[1].(*fyne.Container).Objects[1].(*widget.Button)
+				c2 := ctr.Objects[1].(*fyne.Container).Objects[1].(*widget.Button)
 				/*
 					diu, _ := di.(binding.Untyped).Get()
 					todo := diu.(models.Todo)
 				*/
 				v, _ := di.(binding.Untyped).Get()
 				student := v.(Student)
-				fmt.Sprintf("%v",student.Name)
+				//fmt.Sprintf("%v",student.Name)
 				l.SetText(student.Name)
-				c1.OnTapped= func () {Edit(app,student)}
+				c1.OnTapped= func () {EditWindow(student)}
+				c2.OnTapped = func () {Delete(student)}
 			},
 		),
 	)
+
+	
 
 	container := container.NewBorder(
 		user_input_container,
 		nil, nil, nil,
 		table_list_container,
 	)
-	
-    window := app.NewWindow("Alunos")
-    //window.SetFullScreen(true)
-    window.SetMaster()
-    window.Resize(fyne.NewSize(500,500))
 
-    window.SetContent(container)
-
-	return window
+	return container
 }
 
 
@@ -166,9 +237,24 @@ func Fetch_all() []Student {
 
 ////////////////////////////
 
-func main() {
-    app := app.New()
-	MainWindow(app).Show()
-    app.Run()
+var this_app fyne.App = app.New()
+
+func main() { 
+
+	window := this_app.NewWindow("Alunos")
+    //window.SetFullScreen(true)
+    window.SetMaster()
+    window.Resize(fyne.NewSize(500,500))
+
+    window.SetContent(MainContainer())
+
+	go func() {
+		for range time.Tick(time.Second * 3){
+			window.SetContent(MainContainer())
+		}
+	}()
+	
+	window.Show()
+	this_app.Run()
 }
 
