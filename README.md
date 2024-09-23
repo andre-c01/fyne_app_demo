@@ -52,4 +52,11 @@ mariadb  -s -u root -e "GRANT CREATE, ALTER, DROP, INSERT, UPDATE, DELETE, SELEC
 
 mariadb  -u root -D "school" -e "desc students;"
 
+mariadb  -s -u root -e "INSERT INTO school.students values (default,'Jorge Maria');"
+mariadb  -s -u root -e "INSERT INTO school.students values (default,'Goncalo Bolacha');"
+mariadb  -s -u root -e "INSERT INTO school.students values (default,'Ricardo Mourinho');"
+mariadb  -s -u root -e "INSERT INTO school.students values (default,'Joao Morcela');"
+mariadb  -s -u root -e "INSERT INTO school.students values (default,'Raponsel Tramoura');"
+mariadb  -s -u root -e "INSERT INTO school.students values (default,'Cara De Cachorro');"
+
 ```
